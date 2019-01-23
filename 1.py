@@ -9,18 +9,22 @@ from os.path import isfile, join
 conf = pyspark.SparkConf()
 spark = SparkSession.builder.getOrCreate()
 print('\n\n\n\n\n\n\n\n\n\n\n\n')
+lastdate= spark.read.parquet("hdfs://10.100.136.60:9000/user/hduser/IncomeOutgo/LastDate")
+yesterday =lastdate.head()[0]
+today =lastdate.head()[1]
 #
-CardBon_DF = spark.read.parquet("hdfs://10.100.136.60:9000/user/hduser/IncomeOutgo/CardBon")
+CardBon_DF = spark.read.parquet("hdfs://10.100.136.60:9000/user/hduser/IncomeOutgo/"+yesterday+"/CardBon")
 CardBon_DF = CardBon_DF.withColumn('CARDNO', rtrim(CardBon_DF.CARDNO))
 CardBon_DF = CardBon_DF.withColumn('CARDNO', ltrim(CardBon_DF.CARDNO))
 CardBon_DF.createOrReplaceTempView("CardBon")
+print(CardBon_DF.head())
 
-CardDebit_DF = spark.read.parquet("hdfs://10.100.136.60:9000/user/hduser/IncomeOutgo/CardDebit")
+CardDebit_DF = spark.read.parquet("hdfs://10.100.136.60:9000/user/hduser/IncomeOutgo/"+yesterday+"/CardDebit")
 CardDebit_DF = CardDebit_DF.withColumn('CARDNO', rtrim(CardDebit_DF.CARDNO))
 CardDebit_DF = CardDebit_DF.withColumn('CARDNO', ltrim(CardDebit_DF.CARDNO))
 CardDebit_DF.createOrReplaceTempView("CardDebit")
 
-CardGift_DF = spark.read.parquet("hdfs://10.100.136.60:9000/user/hduser/IncomeOutgo/CardGift")
+CardGift_DF = spark.read.parquet("hdfs://10.100.136.60:9000/user/hduser/IncomeOutgo/"+yesterday+"/CardGift")
 CardGift_DF = CardGift_DF.withColumn('CARDNO', rtrim(CardGift_DF.CARDNO))
 CardGift_DF = CardGift_DF.withColumn('CARDNO', ltrim(CardGift_DF.CARDNO))
 CardGift_DF = CardGift_DF.withColumn('CUSTNO', lit(None).cast(StringType()))
@@ -33,7 +37,7 @@ Card_DF.repartition(6).createOrReplaceTempView("Card")
 
 #
 ###                 paya voroodi
-Incoming_DF = spark.read.parquet("hdfs://10.100.136.60:9000/user/hduser/IncomeOutgo/Incomming")
+Incoming_DF = spark.read.parquet("hdfs://10.100.136.60:9000/user/hduser/IncomeOutgo/"+yesterday+"/Incomming")
 Incoming_DF = Incoming_DF.withColumn('RecAccNo', ltrim(Incoming_DF.RecAccNo))
 Incoming_DF = Incoming_DF.withColumn('RecAccNo', rtrim(Incoming_DF.RecAccNo))
 Incoming_DF = Incoming_DF.withColumn('TrackID', ltrim(Incoming_DF.TrackID))
@@ -49,10 +53,10 @@ Incoming_DF = Incoming_DF.withColumn('source', lit('paya').cast(StringType()))
 Incoming_DF = Incoming_DF.withColumn('type', lit('I').cast(StringType()))
 '''Incoming_DF = Incoming_DF.withColumn('Hisdate', lit(date).cast(StringType()))'''
 Incoming_DF.createOrReplaceTempView("Incoming")
-print('paya voroodi          ',Incoming_DF.take(1), Incoming_DF.amount.sum())
+print('paya voroodi          ',Incoming_DF.take(1), (Incoming_DF.agg(sum("amount")).collect()))
 
 
-actinfo_DF = spark.read.parquet("hdfs://10.100.136.60:9000/user/hduser/IncomeOutgo/Actinfo")
+actinfo_DF = spark.read.parquet("hdfs://10.100.136.60:9000/user/hduser/IncomeOutgo/"+yesterday+"/Actinfo")
 actinfo_DF = actinfo_DF.withColumn('ACNO', rtrim(actinfo_DF.ACNO))
 actinfo_DF = actinfo_DF.withColumn('Acno', ltrim(actinfo_DF.ACNO))
 actinfo_DF = actinfo_DF.withColumn('CUSTNO', rtrim(actinfo_DF.CUSTNO))
@@ -60,7 +64,7 @@ actinfo_DF = actinfo_DF.withColumn('Custno', ltrim(actinfo_DF.CUSTNO))
 actinfo_DF.createOrReplaceTempView("actinfo")
 
 ####                paya khoroooji
-Outgoing_DF = spark.read.parquet("hdfs://10.100.136.60:9000/user/hduser/IncomeOutgo/Outgoing")
+Outgoing_DF = spark.read.parquet("hdfs://10.100.136.60:9000/user/hduser/IncomeOutgo/"+yesterday+"/Outgoing")
 Outgoing_DF = Outgoing_DF.withColumn('SenderAccNo', ltrim(Outgoing_DF.SenderAccNo))
 Outgoing_DF = Outgoing_DF.withColumn('SenderAccNo', rtrim(Outgoing_DF.SenderAccNo))
 Outgoing_DF = Outgoing_DF.withColumn('TraceId', ltrim(Outgoing_DF.TraceId))
@@ -76,10 +80,10 @@ Outgoing_DF = Outgoing_DF.withColumn('source', lit('paya').cast(StringType()))
 Outgoing_DF = Outgoing_DF.withColumn('type', lit('I').cast(StringType()))
 '''Outgoing_DF = Outgoing_DF.withColumn('Hisdate', lit(date).cast(StringType()))'''
 Outgoing_DF.createOrReplaceTempView("Outgoing")
-print('paya khoroooji          ',Outgoing_DF.take(1), Outgoing_DF.amount.sum())
+print('paya khoroooji          ',Outgoing_DF.take(1), (Outgoing_DF.agg(sum("amount")).collect()))
 
 
-Chakavak_DF = spark.read.parquet("hdfs://10.100.136.60:9000/user/hduser/IncomeOutgo/Chakavak")
+Chakavak_DF = spark.read.parquet("hdfs://10.100.136.60:9000/user/hduser/IncomeOutgo/"+yesterday+"/Chakavak")
 Chakavak_DF = Chakavak_DF.withColumn('BenefSheba', rtrim(Chakavak_DF.BenefSheba))
 Chakavak_DF = Chakavak_DF.withColumn('BenefSheba', substring('BenefSheba', -13, 13))
 Chakavak_DF = Chakavak_DF.withColumnRenamed("BenefSheba","Acno")
@@ -102,41 +106,11 @@ Chakavakin_DF = Chakavakin_DF.withColumn('source', lit('chakavak_non').cast(Stri
 Chakavakin_DF = Chakavakin_DF.withColumn('type', lit('I').cast(StringType()))
 '''Chakavakin_DF = Chakavakin_DF.withColumn('Hisdate', lit(date).cast(StringType()))'''
 Chakavakin_DF.createOrReplaceTempView("Chakavakin")
-print(' Chakavak non-ramzdar voroodi            ',Chakavakin_DF.take(1), Chakavakin_DF.amount.sum())
+print(' Chakavak non-ramzdar voroodi            ',Chakavakin_DF.take(1),  (Chakavakin_DF.agg(sum("amount")).collect()))
 
 
 
-#       Chakavak non-ramzdar khorooji
 
-BllChakavak_DF = spark.read.parquet("hdfs://10.100.136.60:9000/user/hduser/IncomeOutgo/BLLCHAKAVAK")
-BllChakavak_DF = BllChakavak_DF.withColumn('Acc', rtrim(BllChakavak_DF.Acc))
-BllChakavak_DF = BllChakavak_DF.withColumn('Acc', ltrim(BllChakavak_DF.Acc))
-BllChakavak_DF = BllChakavak_DF.withColumn('OptionInfo1', rtrim(BllChakavak_DF.OptionInfo1))
-BllChakavak_DF = BllChakavak_DF.withColumn('OptionInfo1', ltrim(BllChakavak_DF.OptionInfo1))
-BllChakavak_DF.createOrReplaceTempView("BllChakavak")
-ch = Chakavak_DF.join (BllChakavak_DF , Chakavak_DF.OrderTrackNo == BllChakavak_DF.OptionInfo1, how='left')
-ch = ch.withColumnRenamed("Acno","BenefSheba")
-ch = ch.join (actinfo_DF ,ch.Acc == actinfo_DF.Acno,how='left')
-'''ch = ch.filter(col('Hisdate') == date1 )'''
-ch = ch.filter(col('BenefBankCode') != 'AYBKIRTHXXX')
-ch = ch.filter(col('ChqFinalStat').like('%تا%'))
-ch = ch.filter(~col('ChqType').like("%رمز%") )
-ch = ch.filter(~col('BenefName').like("%بانک%") )
-ch = ch.filter(~col('BenefName').like("%بانك%") )
-ch = ch.filter(~col('BenefName').like("%خزانه%") )
-ch = ch.filter(~col('BenefName').like("%مبادلات%") )
-ch = ch.filter(col('OrderBankBranch') != '201')
-ch = ch.withColumn('OrderBankBranch',concat(lit('0000'), col('OrderBankBranch')))
-ch = ch.withColumn('OrderBankBranch', substring('OrderBankBranch', -4, 4))
-###ch = ch.filter(col('Acc') != '030089325004') # ???????????????????????????????????????????????????????????????????????????????????????????????????????
-ch = ch.withColumn("Acno", when(isnull(ch.Acc),ch.BenefMeliCode).otherwise(ch.Acc))
-# ch = ch.groupby(['BenefBankCode', 'OrderBankBranch','Acno']).agg(sum(col('Amount')).alias('amount'))
-# ch = ch.select("OrderTrackNo","Custno","Acno","BenefMeliCode","OrderBankBranch","BenefBankCode","TranAtmX","BenefName")
-ch = ch.groupby(['Bank', 'Branch','Acno']).agg(sum(col('Amount')).alias('amount'))
-ch = ch.withColumn('Branch', lit(None).cast(StringType()))
-ch = ch.withColumn('source', lit('chakavak_non').cast(StringType()))
-ch = ch.withColumn('type', lit('O').cast(StringType()))
-print(' Chakavak non-ramzdar khorooji         ',ch.head(), ch.amount.sum())
 
 
 
@@ -152,14 +126,48 @@ Chakavakrin_DF = Chakavakrin_DF.withColumn('source', lit('chakavak_rz').cast(Str
 Chakavakrin_DF = Chakavakrin_DF.withColumn('type', lit('I').cast(StringType()))
 '''Chakavakrin_DF = Chakavakrin_DF.withColumn('Hisdate', lit(date).cast(StringType()))'''
 Chakavakrin_DF.createOrReplaceTempView("ChakavakinRamzdar")
-print('  Chakavak ramzdar voroodi            ',Chakavakrin_DF.take(1), Chakavakrin_DF.amount.sum())
-
-
-
+# print('  Chakavak ramzdar voroodi            ', (Chakavakrin_DF.agg(sum("amount")).collect()))
 
 #       Chakavak non-ramzdar khorooji
 
-BllChakavak_DF = spark.read.parquet("hdfs://10.100.136.60:9000/user/hduser/IncomeOutgo/BLLCHAKAVAK")
+BllChakavak_DF = spark.read.parquet("hdfs://10.100.136.60:9000/user/hduser/IncomeOutgo/"+yesterday+"/BLLCHAKAVAK")
+BllChakavak_DF = BllChakavak_DF.withColumn('Acc', rtrim(BllChakavak_DF.Acc))
+BllChakavak_DF = BllChakavak_DF.withColumn('Acc', ltrim(BllChakavak_DF.Acc))
+BllChakavak_DF = BllChakavak_DF.withColumn('OptionInfo1', rtrim(BllChakavak_DF.OptionInfo1))
+BllChakavak_DF = BllChakavak_DF.withColumn('OptionInfo1', ltrim(BllChakavak_DF.OptionInfo1))
+BllChakavak_DF.createOrReplaceTempView("BllChakavak")
+ch = Chakavak_DF.join (BllChakavak_DF , Chakavak_DF.OrderTrackNo == BllChakavak_DF.OptionInfo1, how='left')
+ch = ch.withColumnRenamed("Acno","BenefSheba")
+ch = ch.join (actinfo_DF ,ch.Acc == actinfo_DF.Acno,how='left')
+'''ch = ch.filter(col('Hisdate') == date1 )'''
+print(ch.head())
+ch = ch.filter(col('BenefBankCode') != 'AYBKIRTHXXX')
+ch = ch.filter(col('ChqFinalStat').like('%تا%'))
+ch = ch.filter(~col('ChqType').like("%رمز%") )
+ch = ch.filter(~col('BenefName').like("%بانک%") )
+ch = ch.filter(~col('BenefName').like("%بانك%") )
+ch = ch.filter(~col('BenefName').like("%خزانه%") )
+ch = ch.filter(~col('BenefName').like("%مبادلات%") )
+ch = ch.filter(col('OrderBankBranch') != '201')
+ch = ch.withColumn('OrderBankBranch',concat(lit('0000'), col('OrderBankBranch')))
+ch = ch.withColumn('OrderBankBranch', substring('OrderBankBranch', -4, 4))
+ch = ch.filter(((col('Acc') != '030089325004')&(col('Amount') != ))|()) # ???????????????????????????????????????????????????????????????????????????????????????????????????????
+ch = ch.withColumn("Acno", when(isnull(ch.Acc),ch.BenefMeliCode).otherwise(ch.Acc))
+# ch = ch.groupby(['BenefBankCode', 'OrderBankBranch','Acno']).agg(sum(col('Amount')).alias('amount'))
+# ch = ch.select("OrderTrackNo","Custno","Acno","BenefMeliCode","OrderBankBranch","BenefBankCode","TranAtmX","BenefName")
+ch = ch.groupby(['Bank', 'Branch','Acno']).agg(sum(col('Amount')).alias('amount'))
+ch = ch.withColumn('Branch', lit(None).cast(StringType()))
+ch = ch.withColumn('source', lit('chakavak_non').cast(StringType()))
+ch = ch.withColumn('type', lit('O').cast(StringType()))
+print(ch.agg(count("amount")).collect())
+# print(ch.take(2000))
+print(' Chakavak non-ramzdar khorooji         ',ch.head(),  (ch.agg(sum("amount")).collect()))
+exit(-1)
+
+
+#       Chakavak ramzdar khorooji
+
+BllChakavak_DF = spark.read.parquet("hdfs://10.100.136.60:9000/user/hduser/IncomeOutgo/"+yesterday+"/BLLCHAKAVAK")
 BllChakavak_DF = BllChakavak_DF.withColumn('Acc', rtrim(BllChakavak_DF.Acc))
 BllChakavak_DF = BllChakavak_DF.withColumn('Acc', ltrim(BllChakavak_DF.Acc))
 BllChakavak_DF = BllChakavak_DF.withColumn('OptionInfo1', rtrim(BllChakavak_DF.OptionInfo1))
@@ -186,11 +194,11 @@ ch2 = ch2.groupby(['BenefBankCode', 'OrderBankBranch','Acno']).agg(sum(col('Tran
 ch2 = ch2.withColumn('Branch', lit(None).cast(StringType()))
 ch2 = ch2.withColumn('source', lit('chakavak_rz').cast(StringType()))
 ch2 = ch2.withColumn('type', lit('O').cast(StringType()))
-print('Chakavak non-ramzdar khorooji       ',ch2.head(), ch2.amount.sum())
+print('Chakavak ramzdar khorooji       ',ch2.head(), (ch2.agg(sum("amount")).collect()))
 
 
 
-basicinfo_DF = spark.read.parquet("hdfs://10.100.136.60:9000/user/hduser/IncomeOutgo/BasicInfo")
+basicinfo_DF = spark.read.parquet("hdfs://10.100.136.60:9000/user/hduser/IncomeOutgo/"+yesterday+"/BasicInfo")
 basicinfo_DF = basicinfo_DF.withColumn('ValueCode', rtrim(basicinfo_DF.ValueCode))
 basicinfo_DF = basicinfo_DF.withColumn('ValueCode', ltrim(basicinfo_DF.ValueCode))
 basicinfo_DF = basicinfo_DF.filter(col('FieldName')=='BIC_CODE')
@@ -198,7 +206,7 @@ basicinfo_DF = basicinfo_DF.filter(col('TableName')=='SATNA')
 basicinfo_DF.createOrReplaceTempView("basicinfo")
 
 
-Satna_DF = spark.read.parquet("hdfs://10.100.136.60:9000/user/hduser/IncomeOutgo/Satna")
+Satna_DF = spark.read.parquet("hdfs://10.100.136.60:9000/user/hduser/IncomeOutgo/"+yesterday+"/Satna")
 Satna_DF = Satna_DF.withColumn('OrderOfSwiftCode', rtrim(Satna_DF.OrderOfSwiftCode))
 Satna_DF = Satna_DF.withColumn('OrderOfSwiftCode', ltrim(Satna_DF.OrderOfSwiftCode))
 Satna_DF = Satna_DF.withColumn('BeneficiaryCommentShaba', rtrim(Satna_DF.BeneficiaryCommentShaba))
@@ -219,7 +227,7 @@ Satnab = Satnab.groupby(['OrderOfCommentAcno', 'Bank','BeneficiarySwiftCode']).a
 Satnab = Satnab.withColumn('Branch', lit(None).cast(StringType()))
 Satnab = Satnab.withColumn('source', lit('satna').cast(StringType()))
 Satnab = Satnab.withColumn('type', lit('I').cast(StringType()))
-print(' satna vorodi        ',Satnab.head(), Satnab.amount.sum())
+print(' satna vorodi        ',Satnab.head(),(Satnab.agg(sum("amount")).collect()))
 
 
 
@@ -235,13 +243,13 @@ Satnab2 = Satnab2.groupby(['OrderOfCommentAcno', 'Bank','BeneficiarySwiftCode'])
 Satnab2 = Satnab2.withColumn('Branch', lit(None).cast(StringType()))
 Satnab2 = Satnab2.withColumn('source', lit('satna').cast(StringType()))
 Satnab2 = Satnab2.withColumn('type', lit('I').cast(StringType()))
-print('Satna khorooji      ',Satnab2.head(), Satnab2.amount.sum())
+print('Satna khorooji      ',Satnab2.head(),(Satnab2.agg(sum("amount")).collect()))
 
 
 
 ####                    Shaparak khoroooji
 
-TotalTxn_DF = spark.read.parquet("hdfs://10.100.136.60:9000/user/hduser/IncomeOutgo/TotalTxn")
+TotalTxn_DF = spark.read.parquet("hdfs://10.100.136.60:9000/user/hduser/IncomeOutgo/"+yesterday+"/TotalTxn")
 TotalTxn_DF.createOrReplaceTempView("TotalTxn")
 TotalTxn_DF = TotalTxn_DF.withColumnRenamed("AcquireBankCode","Description")
 TotalTxn_DF = TotalTxn_DF.withColumn('Branch', rtrim(TotalTxn_DF.Branch))
@@ -274,14 +282,14 @@ TotalCard = TotalCard.withColumn('Branch', substring('Branch', -4, 4))
 TotalCard = TotalCard.groupby(['Branch','Custno', 'Bank']).agg(sum(col('amount')).alias('amount'))
 TotalCard = TotalCard.withColumn('source', lit('Shaparak').cast(StringType()))
 TotalCard = TotalCard.withColumn('type', lit('O').cast(StringType()))
-print('Shaparak khoroooji       ',TotalCard.head(), TotalCard.amount.sum())
+print('Shaparak khoroooji       ',TotalCard.head(),(TotalCard.agg(sum("amount")).collect()))
 
 # Custinfo_DF = spark.read.parquet("hdfs://10.100.136.60:9000/user/hduser/IncomeOutgo/Custinfo")
 # Custinfo_DF.createOrReplaceTempView("Custinfo")
 
 
 ###                 shaparak voroodi
-SHPRTGS_DF = spark.read.parquet("hdfs://10.100.136.60:9000/user/hduser/IncomeOutgo/SHPRTGS")
+SHPRTGS_DF = spark.read.parquet("hdfs://10.100.136.60:9000/user/hduser/IncomeOutgo/"+yesterday+"/SHPRTGS")
 SHPRTGS_DF = SHPRTGS_DF.withColumn('Iban', rtrim(SHPRTGS_DF.IBAN))
 SHPRTGS_DF = SHPRTGS_DF.withColumn('Iban', rtrim(SHPRTGS_DF.Iban))
 SHPRTGS_DF = SHPRTGS_DF.withColumn('acno', substring('Iban', -13, 13))
@@ -291,12 +299,12 @@ SHPRTGS_DF = SHPRTGS_DF.withColumn('Branch', lit(None).cast(StringType()))
 SHPRTGS_DF = SHPRTGS_DF.withColumn('source', lit('Shaprak').cast(StringType()))
 SHPRTGS_DF = SHPRTGS_DF.withColumn('type', lit('I').cast(StringType()))
 SHPRTGS_DF.createOrReplaceTempView("SHPRTGS")
-print('shaparak voroodi      ',SHPRTGS_DF.head(), SHPRTGS_DF.amount.sum())
+print('shaparak voroodi      ',SHPRTGS_DF.head(), (SHPRTGS_DF.agg(sum("amount")).collect()))
 
 
 
 
-TotalTxn2_DF = spark.read.parquet("hdfs://10.100.136.60:9000/user/hduser/IncomeOutgo/TotalTxn")
+TotalTxn2_DF = spark.read.parquet("hdfs://10.100.136.60:9000/user/hduser/IncomeOutgo/"+yesterday+"/TotalTxn")
 TotalTxn2_DF = TotalTxn2_DF.withColumn('CardNo', rtrim(TotalTxn2_DF.CardNo))
 TotalTxn2_DF = TotalTxn2_DF.withColumn('CardNo1', rtrim(TotalTxn2_DF.CardNo))
 TotalTxn2_DF = TotalTxn2_DF.withColumn('pan6', substring(TotalTxn2_DF.CardNo,0,6))
@@ -330,7 +338,7 @@ TotalCard2 = TotalCard2.withColumn('Branch',concat(lit('0000'), col('BRANCH')))
 TotalCard2 = TotalCard2.withColumn('Branch', substring('Branch', -4, 4))
 TotalCard2 = TotalCard2.withColumn('source', lit('Shetab').cast(StringType()))
 TotalCard2 = TotalCard2.withColumn('type', lit('I').cast(StringType()))
-print('shetab voroodi    ',TotalCard2.head(), TotalCard2.amount.sum())
+print('shetab voroodi    ',TotalCard2.head(), (TotalCard2.agg(sum("amount")).collect()))
 
 ##                          shetab khorooji
 TotalTxn2out_DF = TotalTxn2_DF.filter(col('SuccessOrFailure')=='S')
@@ -346,6 +354,6 @@ TotalCard3 = TotalCard3.withColumn("Bank", when((TotalCard3.ProcessCode == '46')
 TotalCard3 = TotalCard3.groupby(['Branch','Acno', 'Bank']).agg(sum(col('Amount')).alias('amount'))
 TotalCard3 = TotalCard3.withColumn('source', lit('Shetab').cast(StringType()))
 TotalCard3 = TotalCard3.withColumn('type', lit('O').cast(StringType()))
-print('shetab khorooji  ' ,TotalCard3.head(), TotalCard3.amount.sum())
+print('shetab khorooji  ' ,TotalCard3.head(), (TotalCard3.agg(sum("amount")).collect()))
 
 
