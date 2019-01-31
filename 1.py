@@ -137,7 +137,7 @@ BllChakavak_DF = BllChakavak_DF.withColumn('OptionInfo1', rtrim(BllChakavak_DF.O
 BllChakavak_DF = BllChakavak_DF.withColumn('OptionInfo1', ltrim(BllChakavak_DF.OptionInfo1))
 BllChakavak_DF.createOrReplaceTempView("BllChakavak")
 ch = Chakavak_DF.join (BllChakavak_DF , Chakavak_DF.OrderTrackNo == BllChakavak_DF.OptionInfo1, how='left')
-ch = ch.withColumnRenamed("Acno","BenefSheba")
+ch=ch.select('column1').distinct()
 ch = ch.join (actinfo_DF ,ch.Acc == actinfo_DF.Acno,how='left')
 '''ch = ch.filter(col('Hisdate') == date1 )'''
 print(ch.head())
@@ -167,14 +167,8 @@ exit(-1)
 
 #       Chakavak ramzdar khorooji
 
-BllChakavak_DF = spark.read.parquet("hdfs://10.100.136.60:9000/user/hduser/IncomeOutgo/"+yesterday+"/BLLCHAKAVAK")
-BllChakavak_DF = BllChakavak_DF.withColumn('Acc', rtrim(BllChakavak_DF.Acc))
-BllChakavak_DF = BllChakavak_DF.withColumn('Acc', ltrim(BllChakavak_DF.Acc))
-BllChakavak_DF = BllChakavak_DF.withColumn('OptionInfo1', rtrim(BllChakavak_DF.OptionInfo1))
-BllChakavak_DF = BllChakavak_DF.withColumn('OptionInfo1', ltrim(BllChakavak_DF.OptionInfo1))
-BllChakavak_DF.createOrReplaceTempView("BllChakavak")
+
 ch2 = Chakavak_DF.join (BllChakavak_DF , Chakavak_DF.OrderTrackNo == BllChakavak_DF.OptionInfo1, how='left')
-ch2 = ch2.withColumnRenamed("Acno","BenefSheba")
 ch2 = ch2.join (actinfo_DF ,ch2.Acc == actinfo_DF.Acno,how='left')
 '''ch = ch.filter(col('Hisdate') == date1 )'''
 ch2 = ch2.filter(col('BenefBankCode') != 'AYBKIRTHXXX')
